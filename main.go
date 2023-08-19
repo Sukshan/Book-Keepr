@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -18,10 +19,47 @@ type Repository struct { //defined Repository datatype
 	DB *gorm.DB // declared member DB which is a pointer to gorm.DB datatype , and this gives ability to interact with database
 }
 
-func (r *Repository) CreateBook(context *fiber.Ctx) error { // created method for Repository struct , this method returns an error
+func (r *Repository) CreateBook(context *fiber.Ctx) error { // created member function for Repository struct
+	//this method returns value of type error
+	// here r in (r *Repository) is name in order to self reference within the function body
 	book := Book{}
 
-	context.BodyParser(&book)
+	err := context.BodyParser(&book)
+
+	if err != nil {
+		context.Status(http.StatusUnprocessableEntity).JSON(
+			&fiber.Map{"message": "request failed"})
+		return err
+	}
+
+	err = r.DB.Create(&book).Error
+	if err != nil {
+		context.Status(http.StatusBadRequest).JSON(
+			&fiber.Map{"message": "could not create book"})
+		return err
+	}
+
+	context.Status(http.StatusOK).JSON(
+		&fiber.Map{"message": "book has been added"})
+
+	return nil
+
+}
+
+func (r *Repository) GetBooks(context *fiber.Ctx) error {
+	bookModels := &[]models.Books{}
+
+	err := r.DB.Find(bookModle).Error
+	if err != nil {
+		context.Status(http.StatusBadRequest).JSON(
+			&fiber.Map{"message": "could not get the books"})
+		return err
+	}
+
+	context.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "books fetched successfully",
+		"data":    bookModels,
+	})
 }
 
 func (r *Repository) SetupRoutes(app *fiber.App) { // the datatype of value which we have passed as parameter to this function was initialized with value

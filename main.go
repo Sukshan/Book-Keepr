@@ -3,7 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/Sukshan/Postgres-GO/models"
+	"github.com/Sukshan/Postgres-GO/storage"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
@@ -46,6 +49,31 @@ func (r *Repository) CreateBook(context *fiber.Ctx) error { // created member fu
 
 }
 
+func (r *Repository) DeleteBook(context *fiber.Ctx) error{
+	bookModel := models.Books{}
+	id := context.Params("id")
+	
+	if id == "" {
+		context.Status(http.StatusInternalServerError).JSON(*fiber.Map{
+			"message":"id cannot be empty"
+		})
+	}
+
+	err := r.DB.Delete(bookModel, id)
+
+	if err.Error != nil {
+		context.Status(http.StatusBadRequest).JSON(*fiber.Map{
+			"message":"could not delete book",
+		})
+		return err.Error
+	}
+	context.Status(http.STatusOK).JSON(&fiber.Map){(
+		"message":"books deleted successfully"
+	)}
+
+	return nil
+}
+
 func (r *Repository) GetBooks(context *fiber.Ctx) error {
 	bookModels := &[]models.Books{}
 
@@ -77,6 +105,15 @@ func main() {
 
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	config = &storage.Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Password: os.Getenv("DB_PASS"),
+		User:     os.Getenv("DB_USER"),
+		DBName:   os.Getenv("DB_NAME"),
+		SSLMode:  os.Getenv("DB_SSLMODE"),
 	}
 
 	db, err := storage.NewConnection(config)

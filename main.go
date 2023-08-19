@@ -90,6 +90,37 @@ func (r *Repository) GetBooks(context *fiber.Ctx) error {
 	})
 }
 
+
+func (r *Repository) GetBookByID(context *fiber.Ctx) error {
+
+	id := context.Params("id")
+	bookModel := &models.Books{}
+	if id == " "{
+		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message":"id cannot be empty"
+		})
+		return nil
+	}
+
+	fmt.Println("the ID is", id)
+
+	err := r.DB.Where("id=?",id).First(bookModel).Error
+	if err != nil{
+		context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message":"could not get the book"
+		})
+		return err
+	}
+
+	context.Status(http.StatusOK).JSON(&fiber.Map{
+		"message":"book id fetched successfully", 
+		"data":bookModel,
+	})
+	return nil
+
+}
+
+
 func (r *Repository) SetupRoutes(app *fiber.App) { // the datatype of value which we have passed as parameter to this function was initialized with value
 	//fiber.New() which is of type *fiber.App i.e a pointer to value of datatype fiber.App
 	// since instead of doing var a int = 4 we usually do a:= 4 , similar was done here
@@ -121,6 +152,12 @@ func main() {
 	if err != nil {
 		log.Fatal("could not load the database")
 	}
+
+	err = models.MigrateBooks(db)
+	if err != nil {
+		log.Fatal("could not migrate db")
+	}
+
 
 	r := Repository{ //defined r of datatype Repository
 		DB: db,

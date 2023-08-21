@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -30,6 +31,7 @@ func (r *Repository) CreateBook(context *fiber.Ctx) error { // created member fu
 	err := context.BodyParser(&book)
 
 	if err != nil {
+		log.Printf("Error parsing requesst body: %s", err)
 		context.Status(http.StatusUnprocessableEntity).JSON(
 			&fiber.Map{"message": "request failed"})
 		return err
@@ -49,27 +51,28 @@ func (r *Repository) CreateBook(context *fiber.Ctx) error { // created member fu
 
 }
 
-func (r *Repository) DeleteBook(context *fiber.Ctx) error{
+func (r *Repository) DeleteBook(context *fiber.Ctx) error {
 	bookModel := models.Books{}
 	id := context.Params("id")
-	
+
 	if id == "" {
-		context.Status(http.StatusInternalServerError).JSON(*fiber.Map{
-			"message":"id cannot be empty"
+		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "id cannot be empty",
 		})
+		return nil
 	}
 
 	err := r.DB.Delete(bookModel, id)
 
 	if err.Error != nil {
-		context.Status(http.StatusBadRequest).JSON(*fiber.Map{
-			"message":"could not delete book",
+		context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "could not delete book",
 		})
 		return err.Error
 	}
-	context.Status(http.STatusOK).JSON(&fiber.Map){(
-		"message":"books deleted successfully"
-	)}
+	context.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "books deleted successfully",
+	})
 
 	return nil
 }
@@ -77,7 +80,7 @@ func (r *Repository) DeleteBook(context *fiber.Ctx) error{
 func (r *Repository) GetBooks(context *fiber.Ctx) error {
 	bookModels := &[]models.Books{}
 
-	err := r.DB.Find(bookModle).Error
+	err := r.DB.Find(bookModels).Error
 	if err != nil {
 		context.Status(http.StatusBadRequest).JSON(
 			&fiber.Map{"message": "could not get the books"})
@@ -88,38 +91,38 @@ func (r *Repository) GetBooks(context *fiber.Ctx) error {
 		"message": "books fetched successfully",
 		"data":    bookModels,
 	})
+	log.Printf("Request served successfully")
+	return nil
 }
-
 
 func (r *Repository) GetBookByID(context *fiber.Ctx) error {
 
 	id := context.Params("id")
 	bookModel := &models.Books{}
-	if id == " "{
+	if id == " " {
 		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message":"id cannot be empty"
+			"message": "id cannot be empty",
 		})
 		return nil
 	}
 
 	fmt.Println("the ID is", id)
 
-	err := r.DB.Where("id=?",id).First(bookModel).Error
-	if err != nil{
+	err := r.DB.Where("id=?", id).First(bookModel).Error
+	if err != nil {
 		context.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message":"could not get the book"
+			"message": "could not get the book",
 		})
 		return err
 	}
 
 	context.Status(http.StatusOK).JSON(&fiber.Map{
-		"message":"book id fetched successfully", 
-		"data":bookModel,
+		"message": "book id fetched successfully",
+		"data":    bookModel,
 	})
 	return nil
 
 }
-
 
 func (r *Repository) SetupRoutes(app *fiber.App) { // the datatype of value which we have passed as parameter to this function was initialized with value
 	//fiber.New() which is of type *fiber.App i.e a pointer to value of datatype fiber.App
@@ -127,7 +130,7 @@ func (r *Repository) SetupRoutes(app *fiber.App) { // the datatype of value whic
 	api := app.Group("/api")
 	api.Post("/create_books", r.CreateBook)
 	api.Delete("delete_book/:id", r.DeleteBook)
-	api.Get("/get_books/:id", r.GetBooksByID)
+	api.Get("/get_books/:id", r.GetBookByID)
 	api.Get("/books", r.GetBooks)
 }
 
@@ -138,7 +141,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	config = &storage.Config{
+	config := &storage.Config{
 		Host:     os.Getenv("DB_HOST"),
 		Port:     os.Getenv("DB_PORT"),
 		Password: os.Getenv("DB_PASS"),
@@ -157,7 +160,6 @@ func main() {
 	if err != nil {
 		log.Fatal("could not migrate db")
 	}
-
 
 	r := Repository{ //defined r of datatype Repository
 		DB: db,

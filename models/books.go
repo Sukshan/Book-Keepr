@@ -1,15 +1,20 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"log"
+
+	"gorm.io/gorm"
+)
 
 type Books struct {
 	ID        uint    `gorm:"primary key; autoIncrement" json:"id"`
 	Author    *string `json:"author"`
-	title     *string `json:"title"`
+	Title     *string `json:"title"`
 	Publisher *string `json:"publisher"`
 }
 
-func MigrateBooks(db *gorm.DB) err {
+func MigrateBooks(db *gorm.DB) error {
 	err := db.AutoMigrate(&Books{})
+	log.Printf("MigateBooks function ran successfully")
 	return err
 }
